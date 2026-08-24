@@ -29,7 +29,7 @@ const CLAUSULA_ALCANCE =
   "El alcance de la cotización presentada se limita al análisis de la información proporcionada por el cliente. " +
   "De ser necesaria la modificación, ajuste o adición de conceptos, esto repercutirá en el importe de la propuesta.";
 
-export default function Cotizaciones({ session, onBack }) {
+export default function Cotizaciones({ session, onBack, trabajoIdInicial }) {
   const { accessToken, profile, cliente } = session;
   const puedeEditar = profile.rol === "admin" || profile.rol === "tecnico";
   const puedeFirmar = profile.rol === "cliente" ? !!cliente?.firma_cotizaciones : false;
@@ -60,6 +60,9 @@ export default function Cotizaciones({ session, onBack }) {
           "select=*,clientes(nombre,direccion),cotizaciones(estatus,folio,created_at)&order=created_at.desc&cotizaciones.order=created_at.desc&cotizaciones.limit=1"
         );
         setTrabajos(ts);
+        if (trabajoIdInicial && ts.some((t) => t.id === trabajoIdInicial)) {
+          await cargarCotizacion(trabajoIdInicial);
+        }
       } catch (e) {
         setError(e.message);
       } finally {

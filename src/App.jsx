@@ -8,6 +8,7 @@ import GastosIngresos from "./screens/GastosIngresos";
 import Cobranza from "./screens/Cobranza";
 import Balance from "./screens/Balance";
 import Equipos from "./screens/Equipos";
+import Ordenes from "./screens/Ordenes";
 
 async function getProfile(accessToken, userId) {
   const data = await dbSelect(accessToken, "profiles", `id=eq.${userId}&select=*`);
@@ -29,6 +30,8 @@ export default function App() {
   const [vista, setVista] = useState("dashboard"); // dashboard | reportes | cotizaciones | gastos | cobranza
   const [vistaParams, setVistaParams] = useState(null);
   const navegarA = (v, params) => { setVistaParams(params || null); setVista(v); };
+  const volverDashboard = () => { setVistaParams(null); setVista("dashboard"); };
+  const volverDesdeSubvista = () => { const destino = vistaParams?.trabajoId ? "ordenes" : "dashboard"; setVistaParams(null); setVista(destino); };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,7 +55,11 @@ export default function App() {
           : null;
       setSession({ accessToken: auth.access_token, user: auth.user, profile, cliente });
     } catch (err) {
-      setError(err.message);
+      setError(
+        err instanceof TypeError
+          ? "No se pudo conectar. Revisa tu conexión a internet e intenta de nuevo."
+          : err.message
+      );
     } finally {
       setLoading(false);
     }
@@ -273,17 +280,19 @@ export default function App() {
       </div>
 
       {vista === "reportes" ? (
-        <ReportesFotograficos session={session} onBack={() => setVista("dashboard")} />
+        <ReportesFotograficos session={session} onBack={volverDesdeSubvista} trabajoIdInicial={vistaParams?.trabajoId} />
       ) : vista === "cotizaciones" ? (
-        <Cotizaciones session={session} onBack={() => setVista("dashboard")} />
+        <Cotizaciones session={session} onBack={volverDesdeSubvista} trabajoIdInicial={vistaParams?.trabajoId} />
       ) : vista === "gastos" ? (
-        <GastosIngresos session={session} onBack={() => setVista("dashboard")} />
+        <GastosIngresos session={session} onBack={volverDashboard} />
       ) : vista === "cobranza" ? (
-        <Cobranza session={session} onBack={() => setVista("dashboard")} />
+        <Cobranza session={session} onBack={volverDashboard} />
       ) : vista === "balance" ? (
-        <Balance session={session} onBack={() => setVista("dashboard")} />
+        <Balance session={session} onBack={volverDashboard} />
       ) : vista === "equipos" ? (
-        <Equipos session={session} onBack={() => setVista("dashboard")} />
+        <Equipos session={session} onBack={volverDashboard} />
+      ) : vista === "ordenes" ? (
+        <Ordenes session={session} onBack={volverDashboard} onNavegar={navegarA} />
       ) : (
         <div style={{ maxWidth: 760, margin: "28px auto", padding: "0 20px" }}>
           <div style={{ fontSize: 13, color: "#6B6656", marginBottom: 18 }}>
@@ -297,12 +306,13 @@ export default function App() {
             }}
           >
             {modulos.map((m, i) => {
-              const activo = m.label === "Reportes fotográficos" || m.label === "Cotizaciones" || m.label === "Mis cotizaciones" || m.label === "Gastos e ingresos" || m.label === "Cobranza" || m.label === "Estado de cuenta" || m.label === "Balance" || m.label === "Mantenimiento preventivo" || m.label === "Mi mantenimiento preventivo";
+              const activo = m.label === "Reportes fotográficos" || m.label === "Cotizaciones" || m.label === "Mis cotizaciones" || m.label === "Gastos e ingresos" || m.label === "Cobranza" || m.label === "Estado de cuenta" || m.label === "Balance" || m.label === "Mantenimiento preventivo" || m.label === "Mi mantenimiento preventivo" || m.label === "Mis órdenes de trabajo" || m.label === "Mis órdenes";
               const destino = m.label.includes("otizaciones") ? "cotizaciones"
                 : m.label === "Gastos e ingresos" ? "gastos"
                 : (m.label === "Cobranza" || m.label === "Estado de cuenta") ? "cobranza"
                 : m.label === "Balance" ? "balance"
                 : (m.label === "Mantenimiento preventivo" || m.label === "Mi mantenimiento preventivo") ? "equipos"
+                : (m.label === "Mis órdenes de trabajo" || m.label === "Mis órdenes") ? "ordenes"
                 : "reportes";
               return (
                 <div

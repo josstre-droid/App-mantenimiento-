@@ -9,7 +9,7 @@ import BloqueFirma from "../components/BloqueFirma";
 
 const BRAND = "#9E191B";
 
-export default function ReportesFotograficos({ session, onBack }) {
+export default function ReportesFotograficos({ session, onBack, trabajoIdInicial }) {
   const { accessToken, profile, cliente } = session;
   const puedeEditar = profile.rol === "admin" || profile.rol === "tecnico";
   const esAdmin = profile.rol === "admin";
@@ -37,6 +37,10 @@ export default function ReportesFotograficos({ session, onBack }) {
         }
         const ts = await dbSelect(accessToken, "trabajos", "select=*,clientes(nombre)&order=created_at.desc");
         setTrabajos(ts);
+        const trabajoInicial = ts.find((t) => t.id === trabajoIdInicial);
+        if (trabajoInicial) {
+          await cargarPartidas(trabajoInicial.id, trabajoInicial.cliente_id);
+        }
       } catch (e) {
         setError(e.message);
       } finally {
